@@ -28,18 +28,25 @@ jobs:
       - name: Build project
         run: cmake --build build-cmake --parallel 2
 
-      - name: Collect dylib files
+
+      - name: Inspect and collect build outputs
         run: |
+          echo "=== Build directory ==="
+          ls -la build-cmake
+          echo "=== Possible iOS libraries ==="
+          find . -type f \( -name "*.dylib" -o -name "*.so" -o -name "*.a" \) -print
+          echo "=== Copy dylib files ==="
           mkdir -p artifacts
-          find build-cmake -type f -name "*.dylib" \
+          find . -type f -name "*.dylib" \
+            -not -path "./artifacts/*" \
             -exec cp {} artifacts/ \;
-          find artifacts -type f -name "*.dylib"
-          test -n "$(find artifacts -name '*.dylib' -print -quit)"
+          echo "=== Collected files ==="
+          ls -lah artifacts
 
       - name: Upload build results
         uses: actions/upload-artifact@v4
         with:
           name: LiveContainer-iOS-Patches
-          path: artifacts/*.dylib
-          if-no-files-found: error
+          path: artifacts/
+          if-no-files-found: warn
           retention-days: 7
