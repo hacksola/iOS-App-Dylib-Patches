@@ -1,0 +1,45 @@
+
+name: Build LiveContainer iOS Patches
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check Apple SDK
+        run: |
+          xcode-select -p
+          xcrun --sdk iphoneos --show-sdk-path
+
+      - name: Install CMake
+        run: brew install cmake
+
+      - name: Configure project
+        run: cmake -B build-cmake
+
+      - name: Build project
+        run: cmake --build build-cmake --parallel 2
+
+      - name: Collect dylib files
+        run: |
+          mkdir -p artifacts
+          find build-cmake -type f -name "*.dylib" \
+            -exec cp {} artifacts/ \;
+          find artifacts -type f -name "*.dylib"
+          test -n "$(find artifacts -name '*.dylib' -print -quit)"
+
+      - name: Upload build results
+        uses: actions/upload-artifact@v4
+        with:
+          name: LiveContainer-iOS-Patches
+          path: artifacts/*.dylib
+          if-no-files-found: error
+          retention-days: 7
